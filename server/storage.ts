@@ -445,17 +445,21 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTask(id: number): Promise<boolean> {
     try {
-      // Check task completion status before deleting
+      // Get task before deleting to check completion status
       const [task] = await db
         .select()
         .from(tasks)
         .where(eq(tasks.id, id));
 
+      if (!task) {
+        return false;
+      }
+
       // Delete the task
       await db
         .delete(tasks)
         .where(eq(tasks.id, id));
-        
+
       return true;
     } catch (error) {
       console.error("Failed to delete task:", error);
