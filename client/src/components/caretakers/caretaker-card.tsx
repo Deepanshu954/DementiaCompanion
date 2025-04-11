@@ -7,12 +7,14 @@ import { Link } from "wouter";
 
 import { CaretakerProfile } from "@/lib/mockCaretakerData";
 
-interface CaretakerCardProps extends CaretakerProfile {
-  matchScore?: number;
-  isTopMatch?: boolean;
+interface CaretakerCardProps {
+  caretaker: CaretakerProfile & {
+    matchScore?: number;
+    isTopMatch?: boolean;
+  };
 }
 
-export function CaretakerCard({ caretaker }: { caretaker: CaretakerCardProps }) {
+export function CaretakerCard({ caretaker }: CaretakerCardProps) {
   // Get initials for avatar fallback
   const getInitials = (name: string) => {
     return name
@@ -41,11 +43,17 @@ export function CaretakerCard({ caretaker }: { caretaker: CaretakerCardProps }) 
   };
 
   return (
-    <Card className="h-full hover:border-primary-500 hover:border-2 transition-all">
+    <Card className={`h-full hover:border-primary-500 hover:border-2 transition-all 
+      ${caretaker.isTopMatch ? 'border-2 border-primary-500 shadow-lg' : ''}`}>
+      {caretaker.isTopMatch && (
+        <div className="absolute -top-2 -right-2 bg-primary-600 text-white px-3 py-1 rounded-full text-xs font-bold transform rotate-12 shadow-md z-10">
+          Top Match!
+        </div>
+      )}
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center">
-            <Avatar className="h-16 w-16 border-2 border-primary-100">
+            <Avatar className={`h-16 w-16 border-2 ${caretaker.isTopMatch ? 'border-primary-500' : 'border-primary-100'}`}>
               <AvatarImage src={caretaker.imageUrl} alt={caretaker.user.fullName} />
               <AvatarFallback className="bg-primary-100 text-primary-700">
                 {getInitials(caretaker.user.fullName)}
@@ -62,8 +70,15 @@ export function CaretakerCard({ caretaker }: { caretaker: CaretakerCardProps }) 
               </div>
             </div>
           </div>
-          <div className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full font-bold">
-            ${caretaker.pricePerDay}<span className="text-sm font-normal">/day</span>
+          <div className="flex flex-col items-end">
+            <div className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full font-bold mb-1">
+              ${caretaker.pricePerDay}<span className="text-sm font-normal">/day</span>
+            </div>
+            {caretaker.matchScore !== undefined && (
+              <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs">
+                Match: {Math.round(caretaker.matchScore / 2)}%
+              </div>
+            )}
           </div>
         </div>
         

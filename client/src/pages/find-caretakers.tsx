@@ -5,7 +5,8 @@ import { SearchFilters } from "@/components/caretakers/search-filters";
 import { CaretakerCard } from "@/components/caretakers/caretaker-card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ThumbsUp } from "lucide-react";
+import { mockCaretakers, filterCaretakers, rankCaretakers, getTopRecommendations } from "@/lib/mockCaretakerData";
 
 export default function FindCaretakers() {
   const [location, setLocation] = useLocation();
@@ -14,11 +15,33 @@ export default function FindCaretakers() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  // Fetch caretakers based on filters
-  const { data: caretakers = [], isLoading } = useQuery({
-    queryKey: ["/api/caretakers", filters],
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  // For development: use mock data instead of API
+  const [isLoading, setIsLoading] = useState(false);
+  const [filteredCaretakers, setFilteredCaretakers] = useState(mockCaretakers);
+  const [topMatches, setTopMatches] = useState<any[]>([]);
+  
+  // Apply filters and set top matches when filters change
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      // Filter and rank caretakers based on preferences
+      const filtered = filterCaretakers(mockCaretakers, filters);
+      const ranked = rankCaretakers(filtered, filters);
+      
+      // Get top 3 recommendations if there are enough filtered caretakers
+      const recommendations = getTopRecommendations(mockCaretakers, filters, 3)
+        .map(caretaker => ({
+          ...caretaker,
+          isTopMatch: true // Mark these as top matches
+        }));
+      
+      setFilteredCaretakers(ranked);
+      setTopMatches(recommendations);
+      setIsLoading(false);
+    }, 500);
+  }, [filters]);
 
   // Handle filter changes
   const handleFilterChange = (newFilters: any) => {
@@ -27,7 +50,7 @@ export default function FindCaretakers() {
   };
 
   // Sort caretakers
-  const sortedCaretakers = [...caretakers].sort((a, b) => {
+  const sortedCaretakers = [...filteredCaretakers].sort((a, b) => {
     switch (sortBy) {
       case "price_low":
         return a.pricePerDay - b.pricePerDay;
@@ -36,8 +59,8 @@ export default function FindCaretakers() {
       case "rating":
         return (b.rating || 0) - (a.rating || 0);
       default:
-        // relevance is default sorting, keep original order
-        return 0;
+        // Default to sorting by match score (highest first)
+        return ((b as any).matchScore || 0) - ((a as any).matchScore || 0);
     }
   });
 
@@ -103,11 +126,29 @@ export default function FindCaretakers() {
       {/* Search and Filters */}
       <SearchFilters onFilterChange={handleFilterChange} />
       
+      {/* Top Matches Section - Only show when we have preferences and top matches */}
+      {!isLoading && topMatches.length > 0 && Object.keys(filters).some(key => filters[key]) && (
+        <div className="bg-primary-50 p-6 rounded-lg border border-primary-100">
+          <div className="flex items-center mb-4">
+            <ThumbsUp className="h-5 w-5 mr-2 text-primary-600" />
+            <h2 className="text-xl font-bold text-primary-800">Top Matches For You</h2>
+          </div>
+          <p className="text-primary-700 mb-4">
+            Based on your preferences, we found these caretakers who might be a perfect fit:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {topMatches.map((caretaker) => (
+              <CaretakerCard key={`top-${caretaker.id}`} caretaker={caretaker} />
+            ))}
+          </div>
+        </div>
+      )}
+      
       {/* Results */}
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-xl font-bold text-neutral-800">
-            {isLoading ? "Searching..." : `${sortedCaretakers.length} Caretakers Found`}
+            {isLoading ? "Searching..." : `${filteredCaretakers.length} Caretakers Found`}
           </h2>
           <div className="flex items-center mt-2 sm:mt-0">
             <label htmlFor="sort" className="mr-2 text-neutral-700">Sort by:</label>
