@@ -5,25 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, MapPin, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
 
-interface CaretakerProfileProps {
-  id: number;
-  userId: number;
-  user: {
-    fullName: string;
-    email: string;
-  };
-  bio: string;
-  pricePerDay: number;
-  location: string;
-  specializations: string[];
-  isCertified: boolean;
-  isBackgroundChecked: boolean;
-  rating?: number;
-  reviewCount?: number;
-  imageUrl?: string;
+import { CaretakerProfile } from "@/lib/mockCaretakerData";
+
+interface CaretakerCardProps extends CaretakerProfile {
+  matchScore?: number;
+  isTopMatch?: boolean;
 }
 
-export function CaretakerCard({ caretaker }: { caretaker: CaretakerProfileProps }) {
+export function CaretakerCard({ caretaker }: { caretaker: CaretakerCardProps }) {
   // Get initials for avatar fallback
   const getInitials = (name: string) => {
     return name

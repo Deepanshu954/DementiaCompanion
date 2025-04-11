@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, MapPin, DollarSign, Brain } from "lucide-react";
+import { Search, MapPin, DollarSign, Brain, User, Calendar, Map } from "lucide-react";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 
 // Define the filter schema
@@ -16,6 +16,9 @@ const filterSchema = z.object({
   location: z.string().optional(),
   priceRange: z.string().optional(),
   specialization: z.string().optional(),
+  gender: z.string().optional(),
+  ageRange: z.string().optional(),
+  serviceArea: z.string().optional(),
   isCertified: z.boolean().optional(),
   isBackgroundChecked: z.boolean().optional(),
   isAvailable: z.boolean().optional()
@@ -36,6 +39,9 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
       location: "",
       priceRange: "",
       specialization: "",
+      gender: "",
+      ageRange: "",
+      serviceArea: "",
       isCertified: false,
       isBackgroundChecked: false,
       isAvailable: false
@@ -55,12 +61,26 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
       maxPrice = max && max !== "+" ? parseInt(max) : undefined;
     }
     
+    // Parse age range to min and max values
+    let minAge: number | undefined;
+    let maxAge: number | undefined;
+    
+    if (data.ageRange) {
+      const [min, max] = data.ageRange.split("-");
+      minAge = min ? parseInt(min) : undefined;
+      maxAge = max && max !== "+" ? parseInt(max) : undefined;
+    }
+    
     // Create filter object
     const filters = {
       location: data.location || undefined,
       specialization: data.specialization || undefined,
+      serviceArea: data.serviceArea || undefined,
+      gender: data.gender || undefined,
       minPrice,
       maxPrice,
+      minAge,
+      maxAge,
       isCertified: data.isCertified,
       isBackgroundChecked: data.isBackgroundChecked,
       isAvailable: data.isAvailable
@@ -167,6 +187,94 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
                             <SelectItem value="Medical Assistance">Medical Assistance</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="gender" className="block text-neutral-700 font-medium mb-2">
+                      Caretaker Gender Preference
+                    </Label>
+                    <FormControl>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger id="gender" className="pl-10 h-12">
+                            <SelectValue placeholder="Any gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Any gender</SelectItem>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="non-binary">Non-binary</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="ageRange"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="ageRange" className="block text-neutral-700 font-medium mb-2">
+                      Caretaker Age Range
+                    </Label>
+                    <FormControl>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger id="ageRange" className="pl-10 h-12">
+                            <SelectValue placeholder="Any age range" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Any age range</SelectItem>
+                            <SelectItem value="20-30">20-30 years</SelectItem>
+                            <SelectItem value="30-40">30-40 years</SelectItem>
+                            <SelectItem value="40-50">40-50 years</SelectItem>
+                            <SelectItem value="50-+">50+ years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="serviceArea"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="serviceArea" className="block text-neutral-700 font-medium mb-2">
+                      Service Area
+                    </Label>
+                    <FormControl>
+                      <div className="relative">
+                        <Map className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 h-5 w-5" />
+                        <Input 
+                          id="serviceArea" 
+                          placeholder="Enter specific neighborhood or area"
+                          className="pl-10 h-12"
+                          {...field}
+                        />
                       </div>
                     </FormControl>
                   </FormItem>
