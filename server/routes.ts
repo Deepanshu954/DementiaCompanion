@@ -426,10 +426,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastTakenAt: new Date()
       });
       
-      res.json(updatedMedication);
-      
       // Notify caretaker if patient took medication themselves
       if (medication.userId === req.user.id) {
+        try {
+          const patientAssignments = await storage.getAssignmentsByPatient(req.user.id);
+          const activeAssignments = patientAssignments.filter(a => a.isActive);
+          const patient = await storage.getUser(req.user.id);
+          
+          for (const assignment of activeAssignments) {
+            const caretaker = await storage.getUser(assignment.caretakerId);
+            if (caretaker && patient) {
+              await emailService.sendPatientUpdateToCaretaker(
+                caretaker,
+                patient,
+                "Medication Taken",
+                `${patient.fullName} has taken ${medication.name} (${medication.dosage})`
+              );
+              
+              await storage.createNotification({
+                userId: caretaker.id,
+                type: "medication",
+                title: "Medication Taken",
+                message: `${patient.fullName} has taken ${medication.name} (${medication.dosage})`,
+                referenceId: medication.id
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Failed to send notifications:", error);
+        }
+      }
+      
+      res.json(updatedMedication);
         const patientAssignments = await storage.getAssignmentsByPatient(req.user.id);
         const activeAssignments = patientAssignments.filter(a => a.isActive);
         
