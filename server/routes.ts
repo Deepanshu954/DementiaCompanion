@@ -457,38 +457,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      res.json(updatedMedication);
-        const patientAssignments = await storage.getAssignmentsByPatient(req.user.id);
-        const activeAssignments = patientAssignments.filter(a => a.isActive);
+      // Notify caretakers
+      const patientAssignments = await storage.getAssignmentsByPatient(req.user.id);
+      const activeAssignments = patientAssignments.filter(a => a.isActive);
+      
+      // Get patient user
+      const patient = await storage.getUser(req.user.id);
+      
+      for (const assignment of activeAssignments) {
+        const caretaker = await storage.getUser(assignment.caretakerId);
         
-        // Get patient user
-        const patient = await storage.getUser(req.user.id);
-        
-        for (const assignment of activeAssignments) {
-          const caretaker = await storage.getUser(assignment.caretakerId);
+        if (caretaker && patient) {
+          // Send email notification
+          await emailService.sendPatientUpdateToCaretaker(
+            caretaker,
+            patient,
+            "Medication Taken",
+            `${patient.fullName} has taken ${medication.name} (${medication.dosage})`
+          );
           
-          if (caretaker && patient) {
-            // Send email notification
-            await emailService.sendPatientUpdateToCaretaker(
-              caretaker,
-              patient,
-              "Medication Taken",
-              `${patient.fullName} has taken ${medication.name} (${medication.dosage})`
-            );
-            
-            // Create notification
-            await storage.createNotification({
-              userId: caretaker.id,
-              type: "medication",
-              title: "Medication Taken",
-              message: `${patient.fullName} has taken ${medication.name} (${medication.dosage})`,
-              referenceId: medication.id
-            });
-          }
+          // Create notification
+          await storage.createNotification({
+            userId: caretaker.id,
+            type: "medication",
+            title: "Medication Taken",
+            message: `${patient.fullName} has taken ${medication.name} (${medication.dosage})`,
+            referenceId: medication.id
+          });
         }
       }
       
-      res.status(201).json(log);
+      res.json(updatedMedication);
     } catch (error) {
       res.status(500).json({ message: "Failed to log medication", error: (error as Error).message });
     }
