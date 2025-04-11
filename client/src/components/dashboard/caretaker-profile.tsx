@@ -30,6 +30,13 @@ export function CaretakerProfile({
   caretaker: CaretakerWithProfileProps; 
   showActions?: boolean;
 }) {
+  const contactInfo = [
+    { icon: "✉️", label: "Email", value: caretaker.user.email },
+    { icon: "📱", label: "Phone", value: caretaker.phoneNumber || "Not provided" },
+    { icon: "📍", label: "Location", value: caretaker.location },
+    { icon: "💼", label: "Experience", value: `${caretaker.yearsExperience} years` },
+    { icon: "💰", label: "Rate", value: `$${caretaker.pricePerDay}/day` }
+  ];
   // Get initials for avatar fallback
   const getInitials = (name: string) => {
     return name
@@ -89,8 +96,20 @@ export function CaretakerProfile({
         </div>
       </div>
       
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {contactInfo.map((info, index) => (
+          <div key={index} className="flex items-center p-3 bg-neutral-50 rounded-lg">
+            <span className="text-xl mr-2">{info.icon}</span>
+            <div>
+              <div className="text-sm text-neutral-500">{info.label}</div>
+              <div className="font-medium">{info.value}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {showActions && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 mt-6">
           <Button className="flex items-center justify-center">
             <MessageSquare className="mr-2 h-4 w-4" />
             Message
