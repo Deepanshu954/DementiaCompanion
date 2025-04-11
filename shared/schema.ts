@@ -36,6 +36,7 @@ export const caretakerProfiles = pgTable("caretaker_profiles", {
   rating: doublePrecision("rating"),
   reviewCount: integer("review_count").default(0),
   isAvailable: boolean("is_available").notNull().default(true),
+  providesLiveLocation: boolean("provides_live_location").notNull().default(false),
   imageUrl: text("image_url"),
 });
 

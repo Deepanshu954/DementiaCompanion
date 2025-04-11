@@ -21,7 +21,8 @@ const filterSchema = z.object({
   serviceArea: z.string().optional(),
   isCertified: z.boolean().optional(),
   isBackgroundChecked: z.boolean().optional(),
-  isAvailable: z.boolean().optional()
+  isAvailable: z.boolean().optional(),
+  providesLiveLocation: z.boolean().optional()
 });
 
 type FilterFormValues = z.infer<typeof filterSchema>;
@@ -84,7 +85,8 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
       maxAge,
       isCertified: data.isCertified,
       isBackgroundChecked: data.isBackgroundChecked,
-      isAvailable: data.isAvailable
+      isAvailable: data.isAvailable,
+      providesLiveLocation: data.providesLiveLocation
     };
     
     onFilterChange(filters);

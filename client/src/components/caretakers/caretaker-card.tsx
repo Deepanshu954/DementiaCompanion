@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Star, MapPin, CheckCircle } from "lucide-react";
+import { Star, MapPin, CheckCircle, Navigation } from "lucide-react";
 import { Link } from "wouter";
 
 import { CaretakerProfile } from "@/lib/mockCaretakerData";
@@ -50,6 +50,12 @@ export function CaretakerCard({ caretaker }: CaretakerCardProps) {
           Top Match!
         </div>
       )}
+      {caretaker.providesLiveLocation && (
+        <div className="absolute -top-2 -left-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-md z-10 flex items-center">
+          <Navigation className="h-3 w-3 mr-1 animate-pulse" />
+          24/7 Tracking
+        </div>
+      )}
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center">
@@ -93,7 +99,7 @@ export function CaretakerCard({ caretaker }: CaretakerCardProps) {
         </div>
         
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center text-neutral-600">
+          <div className="flex items-center text-neutral-600 flex-wrap">
             <MapPin className="mr-1 h-4 w-4" />
             <span className="text-sm">{caretaker.location}</span>
             {caretaker.isBackgroundChecked && (
@@ -101,6 +107,13 @@ export function CaretakerCard({ caretaker }: CaretakerCardProps) {
                 <span className="mx-2">•</span>
                 <CheckCircle className="mr-1 h-4 w-4 text-primary-600" />
                 <span className="text-sm">Background Checked</span>
+              </>
+            )}
+            {caretaker.providesLiveLocation && (
+              <>
+                <span className="mx-2">•</span>
+                <Navigation className="mr-1 h-4 w-4 text-blue-600 animate-pulse" />
+                <span className="text-sm text-blue-600 font-medium">Live Location</span>
               </>
             )}
           </div>
