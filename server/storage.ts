@@ -440,12 +440,24 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(tasks.id, id))
       .returning();
+
+    // Create notification for completed task
+    if (task) {
+      await this.createNotification({
+        userId: task.userId,
+        type: "task",
+        title: "Task Completed",
+        message: `Task "${task.title}" has been completed`,
+        referenceId: task.id
+      });
+    }
+
     return task;
   }
 
   async deleteTask(id: number): Promise<boolean> {
     try {
-      // Get task before deleting to check completion status
+      // Get task before deleting
       const [task] = await db
         .select()
         .from(tasks)
@@ -455,10 +467,16 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
 
-      // Delete the task
-      await db
-        .delete(tasks)
-        .where(eq(tasks.id, id));
+      // Delete the task and create notification
+      await db.delete(tasks).where(eq(tasks.id, id));
+      
+      await this.createNotification({
+        userId: task.userId,
+        type: "task",
+        title: "Task Deleted",
+        message: `Task "${task.title}" has been deleted`,
+        referenceId: task.id
+      });
 
       return true;
     } catch (error) {

@@ -652,21 +652,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Task not found" });
       }
       
-      // Check if user owns this task or is assigned caretaker
-      let canComplete = false;
-      
-      if (task.userId === req.user.id) {
-        canComplete = true;
-      } else if (req.user.role === "caretaker") {
-        // Check if caretaker is assigned to the patient who owns this task
-        const assignments = await storage.getAssignmentsByCaretaker(req.user.id);
-        canComplete = assignments.some(a => a.patientId === task.userId && a.isActive);
-      }
-      
-      if (!canComplete) {
+      // Check if user owns this task
+      if (task.userId !== req.user.id) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
+      // Complete the task
       const completedTask = await storage.completeTask(taskId, req.user.id);
       
       // Notify caretaker if patient completed task themselves
