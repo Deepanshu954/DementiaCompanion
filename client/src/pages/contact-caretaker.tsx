@@ -10,7 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 
-export default function ContactCaretakerPage() {
+function ContactCaretakerPage() {
+  return (
+    <AppLayout>
+      <div className="container py-8">
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [message, setMessage] = useState("");
@@ -118,5 +121,8 @@ export default function ContactCaretakerPage() {
         </CardContent>
       </Card>
     </div>
+    </AppLayout>
   );
 }
+
+export default ContactCaretakerPage;

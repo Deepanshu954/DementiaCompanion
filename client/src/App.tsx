@@ -14,7 +14,8 @@ import FindCaretakers from "@/pages/find-caretakers";
 import Medications from "@/pages/medications";
 import Tasks from "@/pages/tasks";
 import NotFound from "@/pages/not-found";
-import CaretakerProfilePage from "@/pages/caretaker-profile-page"; // Added import
+import CaretakerProfilePage from "@/pages/caretaker-profile-page";
+import ContactCaretakerPage from "@/pages/contact-caretaker";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
