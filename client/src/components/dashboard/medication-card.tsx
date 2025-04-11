@@ -39,12 +39,11 @@ export function MedicationCard({ medication, onActionComplete }: {
   // Take medication mutation
   const takeMedicationMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest(
+      return await apiRequest(
         "POST", 
         `/api/medications/${medication.id}/logs`,
         {}
       );
-      return await res.json();
     },
     onSuccess: () => {
       toast({

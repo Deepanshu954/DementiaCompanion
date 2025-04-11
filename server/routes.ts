@@ -415,29 +415,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Medication not found" });
       }
       
-      // Check if user owns this medication or is assigned caretaker
-      let canLog = false;
-      let caretakerId = null;
-      
-      if (medication.userId === req.user.id) {
-        canLog = true;
-      } else if (req.user.role === "caretaker") {
-        // Check if caretaker is assigned to the patient who owns this medication
-        const assignments = await storage.getAssignmentsByCaretaker(req.user.id);
-        canLog = assignments.some(a => a.patientId === medication.userId && a.isActive);
-        caretakerId = req.user.id;
-      }
-      
-      if (!canLog) {
+      // For now, just allow the medication owner to log
+      if (medication.userId !== req.user.id) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
-      const log = await storage.createMedicationLog({
-        medicationId,
-        takenAt: new Date(),
-        takenBy: caretakerId,
-        notes: req.body.notes || ""
+
+      // Mark medication as taken
+      const updatedMedication = await storage.updateMedication(medicationId, {
+        takenToday: true,
+        lastTakenAt: new Date()
       });
+      
+      res.json(updatedMedication);
       
       // Notify caretaker if patient took medication themselves
       if (medication.userId === req.user.id) {
