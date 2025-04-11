@@ -14,6 +14,7 @@ import FindCaretakers from "@/pages/find-caretakers";
 import Medications from "@/pages/medications";
 import Tasks from "@/pages/tasks";
 import NotFound from "@/pages/not-found";
+import CaretakerProfilePage from "@/pages/caretaker-profile-page"; // Added import
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -33,7 +34,7 @@ function Router() {
       <Route path="/auth">
         <AuthPage />
       </Route>
-      
+
       <ProtectedRoute 
         path="/patient/dashboard" 
         component={() => (
@@ -43,7 +44,7 @@ function Router() {
         )}
         allowedRoles={["patient"]}
       />
-      
+
       <ProtectedRoute 
         path="/caretaker/dashboard" 
         component={() => (
@@ -53,7 +54,7 @@ function Router() {
         )}
         allowedRoles={["caretaker"]}
       />
-      
+
       <ProtectedRoute 
         path="/find-caretakers" 
         component={() => (
@@ -63,7 +64,7 @@ function Router() {
         )}
         allowedRoles={["patient"]}
       />
-      
+
       <ProtectedRoute 
         path="/medications" 
         component={() => (
@@ -73,7 +74,7 @@ function Router() {
         )}
         allowedRoles={["patient"]}
       />
-      
+
       <ProtectedRoute 
         path="/tasks" 
         component={() => (
@@ -83,7 +84,7 @@ function Router() {
         )}
         allowedRoles={["patient"]}
       />
-      
+
       <ProtectedRoute 
         path="/caretaker/medications" 
         component={() => (
@@ -93,7 +94,7 @@ function Router() {
         )}
         allowedRoles={["caretaker"]}
       />
-      
+
       <ProtectedRoute 
         path="/caretaker/tasks" 
         component={() => (
@@ -103,11 +104,15 @@ function Router() {
         )}
         allowedRoles={["caretaker"]}
       />
-      
+
+      <Route path="/caretakers/:id"> {/* Added route for caretaker profile */}
+        <CaretakerProfilePage />
+      </Route>
+
       <Route path="/">
         <AuthPage />
       </Route>
-      
+
       <Route component={() => (
         <AppLayout>
           <NotFound />

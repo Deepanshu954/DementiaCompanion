@@ -121,7 +121,9 @@ export function CaretakerCard({ caretaker }: CaretakerCardProps) {
         
         <div className="grid grid-cols-2 gap-3">
           <Link href={`/caretakers/${caretaker.userId}`}>
-            <Button className="w-full">View Profile</Button>
+            <Button className="w-full" asChild>
+              <a>View Profile</a>
+            </Button>
           </Link>
           <Link href={`/caretakers/${caretaker.userId}/contact`}>
             <Button variant="outline" className="w-full">Contact</Button>
