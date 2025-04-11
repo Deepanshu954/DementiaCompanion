@@ -105,9 +105,7 @@ function Router() {
       />
       
       <Route path="/">
-        <Route>
-          <AuthPage />
-        </Route>
+        <AuthPage />
       </Route>
       
       <Route component={() => (

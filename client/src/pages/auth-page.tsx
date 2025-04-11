@@ -116,7 +116,7 @@ export default function AuthPage() {
               <Heart className="h-12 w-12 text-primary-600" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-neutral-800 mb-2">
-              Welcome to CareConnect
+              Welcome to MemHeav
             </h1>
             <p className="text-neutral-600 max-w-2xl mx-auto">
               Specialized care and support for dementia patients and their caretakers.

@@ -9,9 +9,11 @@ import type {
   Notification, InsertNotification
 } from "@shared/schema";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db, pool } from "./db";
+import { eq, and, or, gte, lte, like, desc, isNull, SQL } from "drizzle-orm";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // Session store
@@ -72,331 +74,388 @@ export interface CaretakerSearchFilters {
   isAvailable?: boolean;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private caretakerProfiles: Map<number, CaretakerProfile>;
-  private assignments: Map<number, Assignment>;
-  private medications: Map<number, Medication>;
-  private medicationLogs: Map<number, MedicationLog>;
-  private tasks: Map<number, Task>;
-  private notifications: Map<number, Notification>;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.SessionStore;
-  
-  private currentIds: {
-    users: number;
-    caretakerProfiles: number;
-    assignments: number;
-    medications: number;
-    medicationLogs: number;
-    tasks: number;
-    notifications: number;
-  };
 
   constructor() {
-    this.users = new Map();
-    this.caretakerProfiles = new Map();
-    this.assignments = new Map();
-    this.medications = new Map();
-    this.medicationLogs = new Map();
-    this.tasks = new Map();
-    this.notifications = new Map();
-    
-    this.currentIds = {
-      users: 1,
-      caretakerProfiles: 1,
-      assignments: 1,
-      medications: 1,
-      medicationLogs: 1,
-      tasks: 1,
-      notifications: 1
-    };
-    
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // 24 hours
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
     });
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentIds.users++;
-    const createdAt = new Date();
-    const user: User = { ...insertUser, id, createdAt };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   // Caretaker profile methods
   async getCaretakerProfile(userId: number): Promise<CaretakerProfile | undefined> {
-    return Array.from(this.caretakerProfiles.values()).find(
-      (profile) => profile.userId === userId
-    );
+    const [profile] = await db
+      .select()
+      .from(caretakerProfiles)
+      .where(eq(caretakerProfiles.userId, userId));
+    return profile;
   }
 
   async createCaretakerProfile(profile: InsertCaretakerProfile): Promise<CaretakerProfile> {
-    const id = this.currentIds.caretakerProfiles++;
-    const caretakerProfile: CaretakerProfile = { 
-      ...profile, 
-      id, 
-      rating: 0, 
-      reviewCount: 0 
-    };
-    this.caretakerProfiles.set(id, caretakerProfile);
+    const [caretakerProfile] = await db
+      .insert(caretakerProfiles)
+      .values({
+        ...profile,
+        rating: 0,
+        reviewCount: 0
+      })
+      .returning();
     return caretakerProfile;
   }
 
   async updateCaretakerProfile(userId: number, profileData: Partial<InsertCaretakerProfile>): Promise<CaretakerProfile | undefined> {
-    const profile = await this.getCaretakerProfile(userId);
+    const [profile] = await db
+      .select()
+      .from(caretakerProfiles)
+      .where(eq(caretakerProfiles.userId, userId));
+    
     if (!profile) return undefined;
     
-    const updatedProfile = { ...profile, ...profileData };
-    this.caretakerProfiles.set(profile.id, updatedProfile);
+    const [updatedProfile] = await db
+      .update(caretakerProfiles)
+      .set(profileData)
+      .where(eq(caretakerProfiles.userId, userId))
+      .returning();
+    
     return updatedProfile;
   }
 
   async searchCaretakers(filters: CaretakerSearchFilters): Promise<(CaretakerProfile & { user: User })[]> {
-    const allProfiles = Array.from(this.caretakerProfiles.values());
+    const conditions: SQL[] = [];
     
-    const filteredProfiles = allProfiles.filter(profile => {
-      let match = true;
-      
-      if (filters.location && !profile.location.toLowerCase().includes(filters.location.toLowerCase())) {
-        match = false;
-      }
-      
-      if (filters.minPrice !== undefined && profile.pricePerDay < filters.minPrice) {
-        match = false;
-      }
-      
-      if (filters.maxPrice !== undefined && profile.pricePerDay > filters.maxPrice) {
-        match = false;
-      }
-      
-      if (filters.specialization && !profile.specializations.some(s => 
-        s.toLowerCase().includes(filters.specialization!.toLowerCase())
-      )) {
-        match = false;
-      }
-      
-      if (filters.isCertified !== undefined && profile.isCertified !== filters.isCertified) {
-        match = false;
-      }
-      
-      if (filters.isBackgroundChecked !== undefined && profile.isBackgroundChecked !== filters.isBackgroundChecked) {
-        match = false;
-      }
-      
-      if (filters.isAvailable !== undefined && profile.isAvailable !== filters.isAvailable) {
-        match = false;
-      }
-      
-      return match;
-    });
+    if (filters.location) {
+      conditions.push(like(caretakerProfiles.location, `%${filters.location}%`));
+    }
     
-    return filteredProfiles.map(profile => {
-      const user = this.users.get(profile.userId)!;
+    if (filters.minPrice !== undefined) {
+      conditions.push(gte(caretakerProfiles.pricePerDay, filters.minPrice));
+    }
+    
+    if (filters.maxPrice !== undefined) {
+      conditions.push(lte(caretakerProfiles.pricePerDay, filters.maxPrice));
+    }
+    
+    // For specialization we need a more complex query with array contains
+    
+    if (filters.isCertified !== undefined) {
+      conditions.push(eq(caretakerProfiles.isCertified, filters.isCertified));
+    }
+    
+    if (filters.isBackgroundChecked !== undefined) {
+      conditions.push(eq(caretakerProfiles.isBackgroundChecked, filters.isBackgroundChecked));
+    }
+    
+    if (filters.isAvailable !== undefined) {
+      conditions.push(eq(caretakerProfiles.isAvailable, filters.isAvailable));
+    }
+    
+    // Join the caretakerProfiles table with the users table
+    let query = db
+      .select({
+        profile: caretakerProfiles,
+        user: users
+      })
+      .from(caretakerProfiles)
+      .innerJoin(users, eq(caretakerProfiles.userId, users.id));
+    
+    // Add the conditions if any
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    // For specialization, we need to filter the results in memory
+    const results = await query;
+    let filteredResults = results;
+    
+    if (filters.specialization) {
+      filteredResults = results.filter(({ profile }) => 
+        profile.specializations.some(s => 
+          s.toLowerCase().includes(filters.specialization!.toLowerCase())
+        )
+      );
+    }
+    
+    // Transform the results to match the expected return type
+    return filteredResults.map(({ profile, user }) => {
       return { ...profile, user };
     });
   }
 
   // Assignment methods
   async getAssignmentsByPatient(patientId: number): Promise<(Assignment & { caretaker: User & { profile?: CaretakerProfile } })[]> {
-    const assignments = Array.from(this.assignments.values()).filter(
-      assignment => assignment.patientId === patientId
-    );
+    const patientAssignments = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.patientId, patientId));
     
-    return assignments.map(assignment => {
-      const caretaker = this.users.get(assignment.caretakerId)!;
-      const profile = this.getCaretakerProfile(caretaker.id);
-      return { 
-        ...assignment, 
-        caretaker: { ...caretaker, profile: profile || undefined }
+    // Get all the caretaker IDs
+    const caretakerIds = patientAssignments.map(a => a.caretakerId);
+    
+    // Get all caretakers in one query
+    const caretakers = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.role, "caretaker"),
+          'id' in users ? eq(users.id as any, caretakerIds) : undefined as any
+        )
+      );
+    
+    // Get all caretaker profiles in one query
+    const profiles = await db
+      .select()
+      .from(caretakerProfiles)
+      .where('userId' in caretakerProfiles ? eq(caretakerProfiles.userId as any, caretakerIds) : undefined as any);
+    
+    // Map caretakers and profiles to assignments
+    return patientAssignments.map(assignment => {
+      const caretaker = caretakers.find(c => c.id === assignment.caretakerId)!;
+      const profile = profiles.find(p => p.userId === caretaker.id);
+      
+      return {
+        ...assignment,
+        caretaker: {
+          ...caretaker,
+          profile
+        }
       };
     });
   }
 
   async getAssignmentsByCaretaker(caretakerId: number): Promise<(Assignment & { patient: User })[]> {
-    const assignments = Array.from(this.assignments.values()).filter(
-      assignment => assignment.caretakerId === caretakerId
-    );
+    const caretakerAssignments = await db
+      .select()
+      .from(assignments)
+      .where(eq(assignments.caretakerId, caretakerId));
     
-    return assignments.map(assignment => {
-      const patient = this.users.get(assignment.patientId)!;
-      return { ...assignment, patient };
+    // Get all the patient IDs
+    const patientIds = caretakerAssignments.map(a => a.patientId);
+    
+    // Get all patients in one query
+    const patients = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.role, "patient"),
+          'id' in users ? eq(users.id as any, patientIds) : undefined as any
+        )
+      );
+    
+    // Map patients to assignments
+    return caretakerAssignments.map(assignment => {
+      const patient = patients.find(p => p.id === assignment.patientId)!;
+      
+      return {
+        ...assignment,
+        patient
+      };
     });
   }
 
   async createAssignment(assignmentData: InsertAssignment): Promise<Assignment> {
-    const id = this.currentIds.assignments++;
-    const assignment: Assignment = { ...assignmentData, id };
-    this.assignments.set(id, assignment);
+    const [assignment] = await db
+      .insert(assignments)
+      .values(assignmentData)
+      .returning();
     return assignment;
   }
 
   async updateAssignment(id: number, data: Partial<Assignment>): Promise<Assignment | undefined> {
-    const assignment = this.assignments.get(id);
-    if (!assignment) return undefined;
-    
-    const updatedAssignment = { ...assignment, ...data };
-    this.assignments.set(id, updatedAssignment);
-    return updatedAssignment;
+    const [assignment] = await db
+      .update(assignments)
+      .set(data)
+      .where(eq(assignments.id, id))
+      .returning();
+    return assignment;
   }
 
   // Medication methods
   async getMedicationsByUser(userId: number): Promise<Medication[]> {
-    return Array.from(this.medications.values()).filter(
-      medication => medication.userId === userId
-    );
+    return db
+      .select()
+      .from(medications)
+      .where(eq(medications.userId, userId));
   }
 
   async getMedicationById(id: number): Promise<Medication | undefined> {
-    return this.medications.get(id);
+    const [medication] = await db
+      .select()
+      .from(medications)
+      .where(eq(medications.id, id));
+    return medication;
   }
 
   async createMedication(medicationData: InsertMedication): Promise<Medication> {
-    const id = this.currentIds.medications++;
     const now = new Date();
-    const medication: Medication = { 
-      ...medicationData, 
-      id, 
-      createdAt: now, 
-      updatedAt: now 
-    };
-    this.medications.set(id, medication);
+    const [medication] = await db
+      .insert(medications)
+      .values({
+        ...medicationData,
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning();
     return medication;
   }
 
   async updateMedication(id: number, data: Partial<InsertMedication>): Promise<Medication | undefined> {
-    const medication = this.medications.get(id);
-    if (!medication) return undefined;
-    
-    const updatedMedication = { 
-      ...medication, 
-      ...data, 
-      updatedAt: new Date() 
-    };
-    this.medications.set(id, updatedMedication);
-    return updatedMedication;
+    const [medication] = await db
+      .update(medications)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(medications.id, id))
+      .returning();
+    return medication;
   }
 
   async deleteMedication(id: number): Promise<boolean> {
-    return this.medications.delete(id);
+    const result = await db
+      .delete(medications)
+      .where(eq(medications.id, id));
+    return true; // Assuming the delete was successful
   }
 
   // Medication log methods
   async getMedicationLogsByMedication(medicationId: number): Promise<MedicationLog[]> {
-    return Array.from(this.medicationLogs.values()).filter(
-      log => log.medicationId === medicationId
-    );
+    return db
+      .select()
+      .from(medicationLogs)
+      .where(eq(medicationLogs.medicationId, medicationId));
   }
 
   async createMedicationLog(logData: InsertMedicationLog): Promise<MedicationLog> {
-    const id = this.currentIds.medicationLogs++;
-    const log: MedicationLog = { ...logData, id };
-    this.medicationLogs.set(id, log);
+    const [log] = await db
+      .insert(medicationLogs)
+      .values(logData)
+      .returning();
     return log;
   }
 
   // Task methods
   async getTasksByUser(userId: number): Promise<Task[]> {
-    return Array.from(this.tasks.values()).filter(
-      task => task.userId === userId
-    );
+    return db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.userId, userId));
   }
 
   async getTaskById(id: number): Promise<Task | undefined> {
-    return this.tasks.get(id);
+    const [task] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, id));
+    return task;
   }
 
   async createTask(taskData: InsertTask): Promise<Task> {
-    const id = this.currentIds.tasks++;
     const now = new Date();
-    const task: Task = { 
-      ...taskData, 
-      id, 
-      isCompleted: false, 
-      completedAt: null,
-      completedBy: null,
-      createdAt: now 
-    };
-    this.tasks.set(id, task);
+    const [task] = await db
+      .insert(tasks)
+      .values({
+        ...taskData,
+        isCompleted: false,
+        completedAt: null,
+        completedBy: null,
+        createdAt: now
+      })
+      .returning();
     return task;
   }
 
   async updateTask(id: number, data: Partial<Task>): Promise<Task | undefined> {
-    const task = this.tasks.get(id);
-    if (!task) return undefined;
-    
-    const updatedTask = { ...task, ...data };
-    this.tasks.set(id, updatedTask);
-    return updatedTask;
+    const [task] = await db
+      .update(tasks)
+      .set(data)
+      .where(eq(tasks.id, id))
+      .returning();
+    return task;
   }
 
   async completeTask(id: number, completedBy: number): Promise<Task | undefined> {
-    const task = this.tasks.get(id);
-    if (!task) return undefined;
-    
-    const updatedTask = { 
-      ...task, 
-      isCompleted: true, 
-      completedAt: new Date(),
-      completedBy 
-    };
-    this.tasks.set(id, updatedTask);
-    return updatedTask;
+    const now = new Date();
+    const [task] = await db
+      .update(tasks)
+      .set({
+        isCompleted: true,
+        completedAt: now,
+        completedBy
+      })
+      .where(eq(tasks.id, id))
+      .returning();
+    return task;
   }
 
   async deleteTask(id: number): Promise<boolean> {
-    return this.tasks.delete(id);
+    await db
+      .delete(tasks)
+      .where(eq(tasks.id, id));
+    return true; // Assuming the delete was successful
   }
 
   // Notification methods
   async getNotificationsByUser(userId: number): Promise<Notification[]> {
-    return Array.from(this.notifications.values()).filter(
-      notification => notification.userId === userId
-    );
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
   }
 
   async createNotification(notificationData: InsertNotification): Promise<Notification> {
-    const id = this.currentIds.notifications++;
     const now = new Date();
-    const notification: Notification = { 
-      ...notificationData, 
-      id, 
-      isRead: false, 
-      createdAt: now 
-    };
-    this.notifications.set(id, notification);
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        ...notificationData,
+        isRead: false,
+        createdAt: now
+      })
+      .returning();
     return notification;
   }
 
   async markNotificationRead(id: number): Promise<Notification | undefined> {
-    const notification = this.notifications.get(id);
-    if (!notification) return undefined;
-    
-    const updatedNotification = { ...notification, isRead: true };
-    this.notifications.set(id, updatedNotification);
-    return updatedNotification;
+    const [notification] = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id))
+      .returning();
+    return notification;
   }
 
   async deleteNotification(id: number): Promise<boolean> {
-    return this.notifications.delete(id);
+    await db
+      .delete(notifications)
+      .where(eq(notifications.id, id));
+    return true; // Assuming the delete was successful
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

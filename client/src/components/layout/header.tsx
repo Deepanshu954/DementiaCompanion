@@ -69,7 +69,7 @@ export function Header() {
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link href={dashboardPath} className="flex items-center gap-2">
           <Heart className="h-6 w-6 text-primary-600" />
-          <span className="text-xl sm:text-2xl font-bold text-primary-600">CareConnect</span>
+          <span className="text-xl sm:text-2xl font-bold text-primary-600">MemHeav</span>
         </Link>
         
         {/* Mobile menu button */}
@@ -85,7 +85,7 @@ export function Header() {
               <div className="flex items-center justify-between border-b pb-4 mb-4">
                 <Link href={dashboardPath} className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
                   <Heart className="h-6 w-6 text-primary-600" />
-                  <span className="text-xl font-bold text-primary-600">CareConnect</span>
+                  <span className="text-xl font-bold text-primary-600">MemHeav</span>
                 </Link>
                 <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
                   <X className="h-5 w-5" />
