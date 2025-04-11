@@ -9,7 +9,7 @@ export function Footer() {
           <div>
             <h3 className="text-xl font-bold mb-4 flex items-center">
               <Heart className="mr-2 h-5 w-5" />
-              CareConnect
+              MemHeav
             </h3>
             <p className="text-neutral-400 mb-4">
               Specialized care and support for dementia patients and their families.
@@ -115,7 +115,7 @@ export function Footer() {
         </div>
         
         <div className="border-t border-neutral-700 mt-8 pt-8 text-center text-neutral-500">
-          <p>&copy; {new Date().getFullYear()} CareConnect. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} MemHeav. All rights reserved.</p>
         </div>
       </div>
     </footer>

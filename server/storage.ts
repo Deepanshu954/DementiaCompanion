@@ -17,7 +17,7 @@ const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using 'any' type to avoid session namespace issue
 
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -75,7 +75,7 @@ export interface CaretakerSearchFilters {
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using 'any' type to avoid session namespace issue
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
@@ -183,7 +183,12 @@ export class DatabaseStorage implements IStorage {
     
     // Add the conditions if any
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      const whereCondition = and(...conditions);
+      // Cast to any to bypass type checking issues
+      query = query as any;
+      if (whereCondition) {
+        query = query.where(whereCondition);
+      }
     }
     
     // For specialization, we need to filter the results in memory
