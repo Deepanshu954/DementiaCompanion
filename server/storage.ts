@@ -226,7 +226,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(users.role, "caretaker"),
-          'id' in users ? eq(users.id as any, caretakerIds) : undefined as any
+          caretakerIds.length > 0 ? eq(users.id, caretakerIds[0]) : undefined
         )
       );
     
@@ -234,7 +234,7 @@ export class DatabaseStorage implements IStorage {
     const profiles = await db
       .select()
       .from(caretakerProfiles)
-      .where('userId' in caretakerProfiles ? eq(caretakerProfiles.userId as any, caretakerIds) : undefined as any);
+      .where(caretakerIds.length > 0 ? eq(caretakerProfiles.userId, caretakerIds[0]) : undefined);
     
     // Map caretakers and profiles to assignments
     return patientAssignments.map(assignment => {
