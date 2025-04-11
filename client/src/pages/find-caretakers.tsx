@@ -27,11 +27,17 @@ export default function FindCaretakers() {
     // Simulate API delay
     setTimeout(() => {
       // Filter and rank caretakers based on preferences
-      const filtered = filterCaretakers(mockCaretakers, filters);
+      let filtered = filterCaretakers(mockCaretakers, filters);
       const ranked = rankCaretakers(filtered, filters);
       
+      // If we've specifically requested live location, make sure they appear in top matches
+      let topMatchCriteria = {...filters};
+      if (filters.providesLiveLocation) {
+        topMatchCriteria.providesLiveLocation = true;
+      }
+      
       // Get top 3 recommendations if there are enough filtered caretakers
-      const recommendations = getTopRecommendations(mockCaretakers, filters, 3)
+      const recommendations = getTopRecommendations(mockCaretakers, topMatchCriteria, 3)
         .map(caretaker => ({
           ...caretaker,
           isTopMatch: true // Mark these as top matches
@@ -58,6 +64,11 @@ export default function FindCaretakers() {
         return b.pricePerDay - a.pricePerDay;
       case "rating":
         return (b.rating || 0) - (a.rating || 0);
+      case "live_location":
+        // Sort by live location availability first, then by rating
+        if (a.providesLiveLocation && !b.providesLiveLocation) return -1;
+        if (!a.providesLiveLocation && b.providesLiveLocation) return 1;
+        return (b.rating || 0) - (a.rating || 0); // If both have same live location status, sort by rating
       default:
         // Default to sorting by match score (highest first)
         return ((b as any).matchScore || 0) - ((a as any).matchScore || 0);
@@ -164,6 +175,7 @@ export default function FindCaretakers() {
                 <SelectItem value="price_low">Price: Low to High</SelectItem>
                 <SelectItem value="price_high">Price: High to Low</SelectItem>
                 <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="live_location">Live Location Available</SelectItem>
               </SelectContent>
             </Select>
           </div>
