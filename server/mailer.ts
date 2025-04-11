@@ -1,52 +1,67 @@
-import { User } from "@shared/schema";
 
-// Since we can't use actual email services in this environment, we'll
-// simulate the email functionality for demonstration purposes
+import { User } from "@shared/schema";
+import nodemailer from 'nodemailer';
+
 export class EmailService {
-  private senderEmail = process.env.SENDER_EMAIL || "notifications@careapp.com"; // Added senderEmail using environment variable
+  private transporter: any;
+
+  constructor() {
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SENDER_EMAIL || 'ashneet2005@gmail.com',
+        pass: process.env.EMAIL_PASSWORD || 'ashneet140305'
+      }
+    });
+  }
+
+  private async sendMail(to: string, subject: string, text: string): Promise<boolean> {
+    try {
+      await this.transporter.sendMail({
+        from: process.env.SENDER_EMAIL || 'ashneet2005@gmail.com',
+        to,
+        subject,
+        text
+      });
+      return true;
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      return false;
+    }
+  }
 
   async sendMedicationReminder(recipient: User, medicationName: string, dosage: string, time: string): Promise<boolean> {
-    // Log the email instead of actually sending it
-    console.log(`[EMAIL] From: ${this.senderEmail}`); // Added sender email to log
-    console.log(`[EMAIL] To: ${recipient.email}`);
-    console.log(`[EMAIL] Subject: Medication Reminder: ${medicationName}`);
-    console.log(`[EMAIL] Body: Hello ${recipient.fullName}, this is a reminder to take ${medicationName} (${dosage}) at ${time}.`);
-
-    return true;
+    const subject = `Medication Reminder: ${medicationName}`;
+    const text = `Hello ${recipient.fullName}, this is a reminder to take ${medicationName} (${dosage}) at ${time}.`;
+    return this.sendMail(recipient.email, subject, text);
   }
 
   async sendTaskReminder(recipient: User, taskTitle: string, description: string, dueTime: string): Promise<boolean> {
-    console.log(`[EMAIL] From: ${this.senderEmail}`); // Added sender email to log
-    console.log(`[EMAIL] To: ${recipient.email}`);
-    console.log(`[EMAIL] Subject: Task Reminder: ${taskTitle}`);
-    console.log(`[EMAIL] Body: Hello ${recipient.fullName}, this is a reminder for your task: ${taskTitle} - ${description}. Due at ${dueTime}.`);
-
-    return true;
+    const subject = `Task Reminder: ${taskTitle}`;
+    const text = `Hello ${recipient.fullName}, this is a reminder for your task: ${taskTitle} - ${description}. Due at ${dueTime}.`;
+    return this.sendMail(recipient.email, subject, text);
   }
 
   async sendPatientUpdateToCaretaker(caretaker: User, patient: User, updateType: string, details: string): Promise<boolean> {
-    console.log(`[EMAIL] From: ${this.senderEmail}`); // Added sender email to log
-    console.log(`[EMAIL] To: ${caretaker.email}`);
-    console.log(`[EMAIL] Subject: Update for your patient ${patient.fullName}`);
-    console.log(`[EMAIL] Body: Hello ${caretaker.fullName}, there's an update for ${patient.fullName}: ${updateType} - ${details}`);
-
-    return true;
+    const subject = `Update for your patient ${patient.fullName}`;
+    const text = `Hello ${caretaker.fullName}, there's an update for ${patient.fullName}: ${updateType} - ${details}`;
+    return this.sendMail(caretaker.email, subject, text);
   }
 
   async sendAssignmentNotification(patient: User, caretaker: User): Promise<boolean> {
-    // Notify patient about caretaker assignment
-    console.log(`[EMAIL] From: ${this.senderEmail}`); // Added sender email to log
-    console.log(`[EMAIL] To: ${patient.email}`);
-    console.log(`[EMAIL] Subject: New Caretaker Assignment`);
-    console.log(`[EMAIL] Body: Hello ${patient.fullName}, ${caretaker.fullName} has been assigned as your caretaker.`);
+    // Send to patient
+    await this.sendMail(
+      patient.email,
+      'New Caretaker Assignment',
+      `Hello ${patient.fullName}, ${caretaker.fullName} has been assigned as your caretaker.`
+    );
 
-    // Notify caretaker about patient assignment
-    console.log(`[EMAIL] From: ${this.senderEmail}`); // Added sender email to log
-    console.log(`[EMAIL] To: ${caretaker.email}`);
-    console.log(`[EMAIL] Subject: New Patient Assignment`);
-    console.log(`[EMAIL] Body: Hello ${caretaker.fullName}, you have been assigned to care for ${patient.fullName}.`);
-
-    return true;
+    // Send to caretaker
+    return this.sendMail(
+      caretaker.email,
+      'New Patient Assignment',
+      `Hello ${caretaker.fullName}, you have been assigned to care for ${patient.fullName}.`
+    );
   }
 }
 
