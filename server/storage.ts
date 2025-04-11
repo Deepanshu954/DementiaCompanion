@@ -342,9 +342,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMedication(id: number): Promise<boolean> {
     try {
-      await db
-        .delete(medications)
+      // First check if medication was taken today
+      const [medication] = await db
+        .select()
+        .from(medications)
         .where(eq(medications.id, id));
+
+      // Get today's logs for this medication
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const logs = await db
+        .select()
+        .from(medicationLogs)
+        .where(
+          and(
+            eq(medicationLogs.medicationId, id),
+            gte(medicationLogs.takenAt, today)
+          )
+        );
+
+      // Delete the medication and its logs
+      await db.delete(medicationLogs).where(eq(medicationLogs.medicationId, id));
+      await db.delete(medications).where(eq(medications.id, id));
+
       return true;
     } catch (error) {
       console.error("Failed to delete medication:", error);
@@ -423,10 +444,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTask(id: number): Promise<boolean> {
-    await db
-      .delete(tasks)
-      .where(eq(tasks.id, id));
-    return true; // Assuming the delete was successful
+    try {
+      // Check task completion status before deleting
+      const [task] = await db
+        .select()
+        .from(tasks)
+        .where(eq(tasks.id, id));
+
+      // Delete the task
+      await db
+        .delete(tasks)
+        .where(eq(tasks.id, id));
+        
+      return true;
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      return false;
+    }
   }
 
   // Notification methods
