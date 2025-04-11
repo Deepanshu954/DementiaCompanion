@@ -19,6 +19,7 @@ export interface CaretakerProfile {
   isCertified: boolean;
   isBackgroundChecked: boolean;
   isAvailable: boolean;
+  providesLiveLocation: boolean;
   rating?: number;
   reviewCount?: number;
   imageUrl?: string;
@@ -43,6 +44,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.8,
     reviewCount: 32,
     imageUrl: "https://randomuser.me/api/portraits/women/22.jpg"
@@ -65,6 +67,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.9,
     reviewCount: 47,
     imageUrl: "https://randomuser.me/api/portraits/men/32.jpg"
@@ -87,6 +90,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: false,
     rating: 4.7,
     reviewCount: 19,
     imageUrl: "https://randomuser.me/api/portraits/women/28.jpg"
@@ -109,6 +113,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.9,
     reviewCount: 28,
     imageUrl: "https://randomuser.me/api/portraits/men/45.jpg"
@@ -131,6 +136,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.8,
     reviewCount: 35,
     imageUrl: "https://randomuser.me/api/portraits/women/35.jpg"
@@ -153,6 +159,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: false,
     rating: 4.6,
     reviewCount: 22,
     imageUrl: "https://randomuser.me/api/portraits/men/58.jpg"
@@ -175,6 +182,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.5,
     reviewCount: 17,
     imageUrl: "https://randomuser.me/api/portraits/women/42.jpg"
@@ -197,6 +205,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.9,
     reviewCount: 43,
     imageUrl: "https://randomuser.me/api/portraits/men/64.jpg"
@@ -219,6 +228,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: false,
     rating: 4.7,
     reviewCount: 25,
     imageUrl: "https://randomuser.me/api/portraits/women/50.jpg"
@@ -241,6 +251,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.6,
     reviewCount: 31,
     imageUrl: "https://randomuser.me/api/portraits/men/76.jpg"
@@ -263,6 +274,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: true,
     rating: 4.8,
     reviewCount: 29,
     imageUrl: "https://randomuser.me/api/portraits/women/60.jpg"
@@ -285,6 +297,7 @@ export const mockCaretakers: CaretakerProfile[] = [
     isCertified: true,
     isBackgroundChecked: true,
     isAvailable: true,
+    providesLiveLocation: false,
     rating: 4.7,
     reviewCount: 34,
     imageUrl: "https://randomuser.me/api/portraits/men/85.jpg"
@@ -293,7 +306,7 @@ export const mockCaretakers: CaretakerProfile[] = [
 
 // Function to filter caretakers based on search criteria
 export function filterCaretakers(caretakers: CaretakerProfile[], filters: any) {
-  return caretakers.filter(caretaker => {
+  const filteredResults = caretakers.filter(caretaker => {
     // Location filter
     if (filters.location && !caretaker.location.toLowerCase().includes(filters.location.toLowerCase())) {
       return false;
@@ -347,8 +360,25 @@ export function filterCaretakers(caretakers: CaretakerProfile[], filters: any) {
       return false;
     }
     
+    // Live location filter
+    if (filters.providesLiveLocation && !caretaker.providesLiveLocation) {
+      return false;
+    }
+    
     return true;
   });
+  
+  // If we have at least 3 caretakers after filtering, return them
+  if (filteredResults.length >= 3) {
+    return filteredResults;
+  }
+  
+  // If we have less than 3 caretakers, we need to find the closest matches
+  // We'll use a scoring system to determine which caretakers are most similar
+  const rankedAll = rankCaretakers(caretakers, filters);
+  
+  // Ensure we always have at least 3 results by taking the top scores
+  return rankedAll.slice(0, Math.max(3, filteredResults.length));
 }
 
 // Function to score and rank caretakers based on preference matching
@@ -406,6 +436,11 @@ export function rankCaretakers(caretakers: CaretakerProfile[], preferences: any)
     }
     if (preferences.isBackgroundChecked && caretaker.isBackgroundChecked) {
       score += 15;
+    }
+    
+    // Live location bonus
+    if (preferences.providesLiveLocation && caretaker.providesLiveLocation) {
+      score += 25; // Significant bonus for live location tracking
     }
     
     // Experience bonus

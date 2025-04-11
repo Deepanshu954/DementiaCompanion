@@ -44,7 +44,8 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
       serviceArea: "",
       isCertified: false,
       isBackgroundChecked: false,
-      isAvailable: false
+      isAvailable: false,
+      providesLiveLocation: false
     }
   });
   
@@ -338,6 +339,26 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
                     </FormControl>
                     <Label htmlFor="isAvailable" className="text-neutral-700">
                       Available Now
+                    </Label>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="providesLiveLocation"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <Checkbox
+                        id="providesLiveLocation"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="h-5 w-5 rounded data-[state=checked]:bg-primary-600"
+                      />
+                    </FormControl>
+                    <Label htmlFor="providesLiveLocation" className="text-neutral-700">
+                      24/7 Live Location Tracking
                     </Label>
                   </FormItem>
                 )}
