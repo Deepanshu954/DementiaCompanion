@@ -420,6 +420,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
+      // Create medication log
+      const log = await storage.createMedicationLog({
+        medicationId,
+        takenAt: new Date(),
+        takenBy: req.user.id
+      });
+
       // Mark medication as taken
       const updatedMedication = await storage.updateMedication(medicationId, {
         takenToday: true,

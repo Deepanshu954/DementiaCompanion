@@ -328,7 +328,7 @@ export class DatabaseStorage implements IStorage {
     return medication;
   }
 
-  async updateMedication(id: number, data: Partial<InsertMedication>): Promise<Medication | undefined> {
+  async updateMedication(id: number, data: Partial<InsertMedication> & { takenToday?: boolean, lastTakenAt?: Date }): Promise<Medication | undefined> {
     const [medication] = await db
       .update(medications)
       .set({
