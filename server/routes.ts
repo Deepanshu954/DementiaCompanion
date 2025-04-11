@@ -51,6 +51,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/caretakers/:id/location", async (req, res) => {
+    try {
+      // Mock location data for development
+      res.json({
+        latitude: 42.3601,
+        longitude: -71.0589,
+        address: "Boston Medical Center, Boston, MA"
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch location" });
+    }
+  });
+
+  app.post("/api/caretakers/:id/contact", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // For development, just acknowledge the message
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
   app.get("/api/caretakers/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);

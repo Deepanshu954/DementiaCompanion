@@ -105,8 +105,12 @@ function Router() {
         allowedRoles={["caretaker"]}
       />
 
-      <Route path="/caretakers/:id"> {/* Added route for caretaker profile */}
+      <Route path="/caretakers/:id">
         <CaretakerProfilePage />
+      </Route>
+
+      <Route path="/caretakers/:id/contact">
+        <ContactCaretakerPage />
       </Route>
 
       <Route path="/">
