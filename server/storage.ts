@@ -220,21 +220,21 @@ export class DatabaseStorage implements IStorage {
     const caretakerIds = patientAssignments.map(a => a.caretakerId);
     
     // Get all caretakers in one query
-    const caretakers = await db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.role, "caretaker"),
-          caretakerIds.length > 0 ? eq(users.id, caretakerIds[0]) : undefined
-        )
-      );
+    const caretakers = caretakerIds.length > 0 
+      ? await db
+          .select()
+          .from(users)
+          .where(eq(users.role, "caretaker"))
+          .where(inArray(users.id, caretakerIds))
+      : [];
     
     // Get all caretaker profiles in one query
-    const profiles = await db
-      .select()
-      .from(caretakerProfiles)
-      .where(caretakerIds.length > 0 ? eq(caretakerProfiles.userId, caretakerIds[0]) : undefined);
+    const profiles = caretakerIds.length > 0
+      ? await db
+          .select()
+          .from(caretakerProfiles)
+          .where(inArray(caretakerProfiles.userId, caretakerIds))
+      : [];
     
     // Map caretakers and profiles to assignments
     return patientAssignments.map(assignment => {
@@ -341,10 +341,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMedication(id: number): Promise<boolean> {
-    const result = await db
-      .delete(medications)
-      .where(eq(medications.id, id));
-    return true; // Assuming the delete was successful
+    try {
+      await db
+        .delete(medications)
+        .where(eq(medications.id, id));
+      return true;
+    } catch (error) {
+      console.error("Failed to delete medication:", error);
+      return false;
+    }
   }
 
   // Medication log methods
