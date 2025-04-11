@@ -37,10 +37,10 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
     resolver: zodResolver(filterSchema),
     defaultValues: {
       location: "",
-      priceRange: "",
-      specialization: "",
-      gender: "",
-      ageRange: "",
+      priceRange: "any",
+      specialization: "any",
+      gender: "any",
+      ageRange: "any",
       serviceArea: "",
       isCertified: false,
       isBackgroundChecked: false,
@@ -55,7 +55,7 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
     let minPrice: number | undefined;
     let maxPrice: number | undefined;
     
-    if (data.priceRange) {
+    if (data.priceRange && data.priceRange !== "any") {
       const [min, max] = data.priceRange.split("-");
       minPrice = min ? parseInt(min) : undefined;
       maxPrice = max && max !== "+" ? parseInt(max) : undefined;
@@ -65,7 +65,7 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
     let minAge: number | undefined;
     let maxAge: number | undefined;
     
-    if (data.ageRange) {
+    if (data.ageRange && data.ageRange !== "any") {
       const [min, max] = data.ageRange.split("-");
       minAge = min ? parseInt(min) : undefined;
       maxAge = max && max !== "+" ? parseInt(max) : undefined;
@@ -74,9 +74,9 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
     // Create filter object
     const filters = {
       location: data.location || undefined,
-      specialization: data.specialization || undefined,
+      specialization: data.specialization !== "any" ? data.specialization : undefined,
       serviceArea: data.serviceArea || undefined,
-      gender: data.gender || undefined,
+      gender: data.gender !== "any" ? data.gender : undefined,
       minPrice,
       maxPrice,
       minAge,
@@ -148,7 +148,7 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
                             <SelectValue placeholder="Any price range" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Any price range</SelectItem>
+                            <SelectItem value="any">Any price range</SelectItem>
                             <SelectItem value="50-100">$50 - $100</SelectItem>
                             <SelectItem value="100-150">$100 - $150</SelectItem>
                             <SelectItem value="150-200">$150 - $200</SelectItem>
@@ -180,7 +180,7 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
                             <SelectValue placeholder="Any specialization" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Any specialization</SelectItem>
+                            <SelectItem value="any">Any specialization</SelectItem>
                             <SelectItem value="Dementia Care">Dementia Care</SelectItem>
                             <SelectItem value="Alzheimer's Care">Alzheimer's Care</SelectItem>
                             <SelectItem value="Elderly Care">Elderly Care</SelectItem>
@@ -214,7 +214,7 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
                             <SelectValue placeholder="Any gender" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Any gender</SelectItem>
+                            <SelectItem value="any">Any gender</SelectItem>
                             <SelectItem value="male">Male</SelectItem>
                             <SelectItem value="female">Female</SelectItem>
                             <SelectItem value="non-binary">Non-binary</SelectItem>
@@ -245,7 +245,7 @@ export function SearchFilters({ onFilterChange }: SearchFiltersProps) {
                             <SelectValue placeholder="Any age range" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Any age range</SelectItem>
+                            <SelectItem value="any">Any age range</SelectItem>
                             <SelectItem value="20-30">20-30 years</SelectItem>
                             <SelectItem value="30-40">30-40 years</SelectItem>
                             <SelectItem value="40-50">40-50 years</SelectItem>
