@@ -567,31 +567,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      
-      let userId = req.user.id;
-      
-      // If caretaker, allow creating tasks for assigned patients
-      if (req.user.role === "caretaker" && req.body.userId) {
-        userId = Number(req.body.userId);
-        
-        // Check if caretaker is assigned to this patient
-        const assignments = await storage.getAssignmentsByCaretaker(req.user.id);
-        const isAssigned = assignments.some(a => a.patientId === userId && a.isActive);
-        
-        if (!isAssigned) {
-          return res.status(403).json({ message: "You are not assigned to this patient" });
-        }
-      }
-      
+
+      // Parse the request body to get task data
       const taskData = insertTaskSchema.parse({
         ...req.body,
-        userId
+        userId: req.user.id
       });
-      
+
+      // Create the task
       const task = await storage.createTask(taskData);
       
       // Schedule reminder for this task
-      await reminderScheduler.scheduleTaskReminders(userId);
+      await reminderScheduler.scheduleTaskReminders(req.user.id);
       
       res.status(201).json(task);
     } catch (error) {
