@@ -1,17 +1,23 @@
 
+import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
 import { CaretakerProfile } from "@/components/dashboard/caretaker-profile";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, Loader2 } from "lucide-react";
 
 export default function CaretakerProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const [, navigate] = useLocation();
   
   const { data: caretaker, isLoading, error } = useQuery({
     queryKey: [`/api/caretakers/${id}`],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  const handleBack = () => {
+    window.history.back();
+  };
 
   if (isLoading) {
     return (
@@ -35,6 +41,14 @@ export default function CaretakerProfilePage() {
 
   return (
     <div className="container py-8">
+      <Button 
+        variant="ghost" 
+        className="mb-4" 
+        onClick={handleBack}
+      >
+        <ChevronLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
       <Card>
         <CardContent className="p-6">
           <CaretakerProfile caretaker={caretaker} showActions={true} />
